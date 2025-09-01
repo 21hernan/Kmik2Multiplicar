@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego de Multiplicación</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <!-- nombres -->
+  <div id="nameScreen" class="box">
+    <h2>Ingresar nombres</h2>
+    <div>
+      <label>Jugador 1:</label>
+      <input type="text" id="p1Name" placeholder="Jugador 1" maxlength="20">
+    </div>
+    <div style="height:12px"></div>
+    <div>
+      <label>Jugador 2:</label>
+      <input type="text" id="p2Name" placeholder="Jugador 2" maxlength="20">
+    </div>
+    <button id="startBtn">Comenzar</button>
+  </div>
+
+  <!-- preparación -->
+  <div id="prepScreen" class="box hidden">
+    <h2 id="prepText"></h2>
+    <button id="prepBtn">Estoy listo</button>
+  </div>
+
+  <!-- juego -->
+  <div id="gameScreen" class="box hidden">
+    <h2 id="turnInfo"></h2>
+    <div id="questionNumber"></div>
+    <div id="timer">⏱ 0.00 s</div>
+    <div id="operation">
+      <span id="num1"></span> × <span id="num2"></span> =
+      <input type="number" id="answerInput" autocomplete="off">
+    </div>
+  </div>
+
+  <!-- resultados -->
+  <div id="resultScreen" class="box hidden">
+    <h2>Resultados Finales</h2>
+    <div id="winnerInfo"></div>
+    <table id="scoreTable"></table>
+    <table id="detailTable"></table>
+    <button id="restartBtn">Reiniciar</button>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
