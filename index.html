@@ -2,29 +2,29 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Juego de Multiplicación</title>
-  <link rel="stylesheet" href="css/estiles.css">
+  <title>Duelo de Multiplicación – 2 Jugadores</title>
+  <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
-  <!-- nombres -->
-  <div id="nameScreen" class="box">
-    <h2>Ingresar nombres</h2>
-    <div>
-      <label>Jugador 1:</label>
-      <input type="text" id="p1Name" placeholder="Jugador 1" maxlength="20">
-    </div>
-    <div style="height:12px"></div>
-    <div>
-      <label>Jugador 2:</label>
-      <input type="text" id="p2Name" placeholder="Jugador 2" maxlength="20">
-    </div>
-    <button id="startBtn">Comenzar</button>
+
+  <!-- pantalla 1: nombre jugador 1 -->
+  <div id="nameP1Screen" class="box">
+    <h2>Jugador 1 – ¿Cómo te llamas?</h2>
+    <input type="text" id="p1NameInput" placeholder="Tu nombre" maxlength="20" autofocus>
+    <button id="saveP1Btn">Continuar</button>
   </div>
 
-  <!-- preparación -->
+  <!-- pantalla 2: nombre jugador 2 -->
+  <div id="nameP2Screen" class="box hidden">
+    <h2>Jugador 2 – ¿Cómo te llamas?</h2>
+    <input type="text" id="p2NameInput" placeholder="Tu nombre" maxlength="20">
+    <button id="saveP2Btn">Empezar duelo</button>
+  </div>
+
+  <!-- preparación / turno -->
   <div id="prepScreen" class="box hidden">
     <h2 id="prepText"></h2>
-    <button id="prepBtn">Estoy listo</button>
+    <button id="readyBtn">Estoy listo</button>
   </div>
 
   <!-- juego -->
@@ -44,7 +44,7 @@
     <div id="winnerInfo"></div>
     <table id="scoreTable"></table>
     <table id="detailTable"></table>
-    <button id="restartBtn">Reiniciar</button>
+    <button id="restartBtn">Revancha</button>
   </div>
 
   <script src="js/script.js"></script>
