@@ -8,12 +8,13 @@ const roomCode = params.get('sala') || 'default-room';
 const roomRef = firebaseRef(firebaseDB, `rooms/${roomCode}`);
 
 // Elementos
+const nameScreen = document.getElementById('nameScreen');
 const waitScreen = document.getElementById('waitScreen');
 const gameScreen = document.getElementById('gameScreen');
 const resultScreen = document.getElementById('resultScreen');
 const playersList = document.getElementById('playersList');
-const joinBtn = document.getElementById('joinBtn');
-const startBtn = document.getElementById('startBtn');
+const saveBtn = document.getElementById('saveBtn');
+const readyBtn = document.getElementById('readyBtn');
 const answerInput = document.getElementById('answerInput');
 
 let myName = '';
@@ -28,36 +29,63 @@ let myStartTime = 0;
 /* ---------- mostrar código de sala ---------- */
 document.getElementById('roomCode').textContent = roomCode;
 
-/* ---------- unirse a la sala ---------- */
-joinBtn.onclick = () => {
+/* ---------- guardar mi nombre ---------- */
+saveBtn.onclick = () => {
   const raw = document.getElementById('playerNameInput').value.trim() || 'Anónimo';
   myName = capitalize(raw);
+  localStorage.setItem('playerName', myName);
   firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/players/${myName}`), { name: myName, ready: false });
-  document.getElementById('playerNameInput').disabled = true;
-  joinBtn.disabled = true;
+  nameScreen.classList.add('hidden');
+  waitScreen.classList.remove('hidden');
 };
+
+document.getElementById('playerNameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveBtn.click();
+});
 
 /* ---------- escuchar jugadores ---------- */
 firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/players`), (snap) => {
   players = [];
   snap.forEach(child => players.push(child.val()));
   playersList.innerHTML = players.map(p => `<li>${p.name} ${p.ready ? '✅' : ''}</li>`).join('');
-  if (players.length === 2 && players.every(p => p.ready)) {
-    startBtn.classList.remove('hidden');
+  if (players.length === 2) {
+    readyBtn.classList.remove('hidden');
   }
 });
 
 /* ---------- marcar listo ---------- */
-startBtn.onclick = () => {
+readyBtn.onclick = () => {
   firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/players/${myName}/ready`), true);
 };
 
-/* ---------- escuchar inicio del juego ---------- */
+/* ---------- cuando ambos estén listos, el primero que lo vea genera las preguntas ---------- */
+firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/players`), (snap) => {
+  const list = [];
+  snap.forEach(child => list.push(child.val()));
+  if (list.length === 2 && list.every(p => p.ready)) {
+    // Solo el primero que lo vea crea las preguntas (evita duplicados)
+    firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/start`), (startSnap) => {
+      if (!startSnap.exists()) {
+        const qs = [];
+        const seen = new Set();
+        while (qs.length < 10) {
+          const a = Math.floor(Math.random() * 8) + 2;
+          const b = Math.floor(Math.random() * 8) + 2;
+          const key = [a, b].sort().join('×');
+          if (!seen.has(key)) { seen.add(key); qs.push([a, b]); }
+        }
+        firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/start`), { questions: qs });
+      }
+    });
+  }
+});
+
+/* ---------- cuando existan las preguntas, empezar ---------- */
 firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/start`), (snap) => {
   if (snap.exists()) {
     questions = snap.val().questions;
     curQ = 0;
-    hide('waitScreen');
+    waitScreen.classList.add('hidden');
     playTurn();
   }
 });

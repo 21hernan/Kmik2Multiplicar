@@ -7,13 +7,18 @@
 </head>
 <body>
 
-  <!-- sala de espera -->
-  <div id="waitScreen" class="box">
-    <h2>Sala: <span id="roomCode"></span></h2>
+  <!-- pantalla: solo pide MI nombre -->
+  <div id="nameScreen" class="box">
+    <h2>¿Cómo te llamas?</h2>
     <input type="text" id="playerNameInput" placeholder="Tu nombre" maxlength="20" autofocus>
-    <button id="joinBtn">Unirse</button>
+    <button id="saveBtn">Guardar</button>
+  </div>
+
+  <!-- sala de espera: veo quién está y me marco listo -->
+  <div id="waitScreen" class="box hidden">
+    <h2>Sala: <span id="roomCode"></span></h2>
     <ul id="playersList"></ul>
-    <button id="startBtn" class="hidden">Empezar juego</button>
+    <button id="readyBtn" class="hidden">Estoy listo</button>
   </div>
 
   <!-- juego -->
