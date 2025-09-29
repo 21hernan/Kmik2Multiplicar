@@ -2,29 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Duelo de Multiplicación – 2 Jugadores</title>
+  <title>Duelo Multiplicar – 2 Jugadores Online</title>
   <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
 
-  <!-- pantalla 1: nombre jugador 1 -->
-  <div id="nameP1Screen" class="box">
-    <h2>Jugador 1 – ¿Cómo te llamas?</h2>
-    <input type="text" id="p1NameInput" placeholder="Tu nombre" maxlength="20" autofocus>
-    <button id="saveP1Btn">Continuar</button>
-  </div>
-
-  <!-- pantalla 2: nombre jugador 2 -->
-  <div id="nameP2Screen" class="box hidden">
-    <h2>Jugador 2 – ¿Cómo te llamas?</h2>
-    <input type="text" id="p2NameInput" placeholder="Tu nombre" maxlength="20">
-    <button id="saveP2Btn">Empezar duelo</button>
-  </div>
-
-  <!-- preparación / turno -->
-  <div id="prepScreen" class="box hidden">
-    <h2 id="prepText"></h2>
-    <button id="readyBtn">Estoy listo</button>
+  <!-- sala de espera -->
+  <div id="waitScreen" class="box">
+    <h2>Sala: <span id="roomCode"></span></h2>
+    <input type="text" id="playerNameInput" placeholder="Tu nombre" maxlength="20" autofocus>
+    <button id="joinBtn">Unirse</button>
+    <div id="playersList"></div>
+    <button id="startBtn" class="hidden">Empezar juego</button>
   </div>
 
   <!-- juego -->
@@ -44,9 +33,34 @@
     <div id="winnerInfo"></div>
     <table id="scoreTable"></table>
     <table id="detailTable"></table>
-    <button id="restartBtn">Revancha</button>
+    <button id="restartBtn">Otra partida</button>
   </div>
 
-  <script src="js/script.js"></script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD9ePhsb1ZAOk43aydJteIVpq9LckkXICk",
+      authDomain: "duelo-multiplicar.firebaseapp.com",
+      projectId: "duelo-multiplicar",
+      storageBucket: "duelo-multiplicar.firebasestorage.app",
+      messagingSenderId: "524966660413",
+      appId: "1:524966660413:web:15abfe649621d1b2459d54",
+      measurementId: "G-2CQGJ5H1MF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.firebaseDB = db;
+    window.firebaseRef = ref;
+    window.firebaseSet = set;
+    window.firebaseOn = onValue;
+    window.firebaseRemove = remove;
+  </script>
+
+  <script type="module" src="js/script.js"></script>
 </body>
 </html>

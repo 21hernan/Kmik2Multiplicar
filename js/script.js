@@ -1,166 +1,164 @@
-const $ = id => document.getElementById(id);
+const { firebaseDB, firebaseRef, firebaseSet, firebaseOn, firebaseRemove } = window;
+
 const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
-/* ---------- datos de ambos jugadores ---------- */
-const players = [
-  { name: '', answers: [], correct: 0, tStart: 0, tEnd: 0 },
-  { name: '', answers: [], correct: 0, tStart: 0, tEnd: 0 }
-];
-let curPlayer = 0;   // 0 o 1
-let questions = [], curQ = 0, timer = null;
+// Sala desde URL
+const params = new URLSearchParams(window.location.search);
+const roomCode = params.get('sala') || 'default-room';
+const roomRef = firebaseRef(firebaseDB, `rooms/${roomCode}`);
 
-/* ---------- generar 10 preguntas iguales ---------- */
-function rnd(n = 10) {
-  const seen = new Set(), out = [];
-  while (out.length < n) {
-    const a = Math.floor(Math.random() * 8) + 2;
-    const b = Math.floor(Math.random() * 8) + 2;
-    const key = [a, b].sort().join('×');
-    if (!seen.has(key)) { seen.add(key); out.push([a, b]); }
+// Elementos
+const waitScreen = $('waitScreen');
+const gameScreen = $('gameScreen');
+const resultScreen = $('resultScreen');
+const playersList = $('playersList');
+const joinBtn = $('joinBtn');
+const startBtn = $('startBtn');
+const answerInput = $('answerInput');
+
+let myName = '';
+let players = [];
+let questions = [];
+let curQ = 0;
+let timer = null;
+let myAnswers = [];
+let myCorrect = 0;
+let myStartTime = 0;
+
+/* ---------- unirse a la sala ---------- */
+$('roomCode').textContent = roomCode;
+
+joinBtn.onclick = () => {
+  const raw = $('playerNameInput').value.trim() || 'Anónimo';
+  myName = capitalize(raw);
+  firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/players/${myName}`), { name: myName, ready: false });
+  $('playerNameInput').disabled = true;
+  joinBtn.disabled = true;
+};
+
+/* ---------- escuchar jugadores ---------- */
+firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/players`), (snap) => {
+  players = [];
+  snap.forEach(child => players.push(child.val()));
+  playersList.innerHTML = players.map(p => `<li>${p.name} ${p.ready ? '✅' : ''}</li>`).join('');
+  if (players.length === 2 && players.every(p => p.ready)) {
+    startBtn.classList.remove('hidden');
   }
-  return out;
-}
-
-function show(id) { $(id).classList.remove('hidden'); }
-function hide(id) { $(id).classList.add('hidden'); }
-
-/* ---------- pedir nombres ---------- */
-$('saveP1Btn').onclick = () => {
-  const raw = $('p1NameInput').value.trim() || 'Jugador 1';
-  players[0].name = capitalize(raw);
-  hide('nameP1Screen');
-  show('nameP2Screen');
-  $('p2NameInput').focus();
-};
-$('p1NameInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') $('saveP1Btn').click();
 });
 
-$('saveP2Btn').onclick = () => {
-  const raw = $('p2NameInput').value.trim() || 'Jugador 2';
-  players[1].name = capitalize(raw);
-  hide('nameP2Screen');
-  startDuel();
+/* ---------- marcar listo ---------- */
+startBtn.onclick = () => {
+  firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/players/${myName}/ready`), true);
 };
-$('p2NameInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') $('saveP2Btn').click();
+
+/* ---------- escuchar inicio del juego ---------- */
+firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/start`), (snap) => {
+  if (snap.exists()) {
+    questions = snap.val().questions;
+    curQ = 0;
+    hide('waitScreen');
+    playTurn();
+  }
 });
 
-/* ---------- inicio del duelo ---------- */
-function startDuel() {
-  questions = rnd();
-  curQ = 0;
-  curPlayer = 0;
-  players[0].answers = [];
-  players[0].correct = 0;
-  players[1].answers = [];
-  players[1].correct = 0;
-  showPrep();
-}
-
-function showPrep() {
-  hide('gameScreen');
-  hide('resultScreen');
-  show('prepScreen');
-  $('prepText').textContent = `Turno de ${players[curPlayer].name}`;
-  $('readyBtn').focus();
-}
-
-$('readyBtn').onclick = () => {
-  hide('prepScreen');
-  playTurn();
-};
-
-/* ---------- turno de un jugador ---------- */
+/* ---------- turno del jugador ---------- */
 function playTurn() {
   show('gameScreen');
-  $('turnInfo').textContent = players[curPlayer].name;
+  $('turnInfo').textContent = capitalize(myName);
   $('questionNumber').textContent = `Pregunta ${curQ + 1} de 10`;
   const [a, b] = questions[curQ];
   $('num1').textContent = a;
   $('num2').textContent = b;
-  $('answerInput').value = '';
-  $('answerInput').focus();
-
-  players[curPlayer].tStart = Date.now();
+  answerInput.value = '';
+  answerInput.focus();
+  myStartTime = Date.now();
   timer = setInterval(() => {
-    const t = (Date.now() - players[curPlayer].tStart) / 1000;
+    const t = (Date.now() - myStartTime) / 1000;
     $('timer').textContent = `⏱ ${t.toFixed(2)} s`;
   }, 100);
 
-  /* Enter para pasar a la siguiente acción */
-  $('answerInput').onkeydown = function (e) {
+  answerInput.onkeydown = function (e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       const ans = parseInt(this.value, 10) || 0;
       const [a, b] = questions[curQ];
       const ok = ans === a * b;
-      players[curPlayer].answers.push({ a, b, correct: a * b, given: ans, ok });
-      if (ok) players[curPlayer].correct++;
+      myAnswers.push({ a, b, correct: a * b, given: ans, ok });
+      if (ok) myCorrect++;
       clearInterval(timer);
-      nextAction();
+      firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/answers/${myName}/${curQ}`), {
+        answer: ans,
+        correct: ok,
+        time: (Date.now() - myStartTime) / 1000
+      });
+      curQ++;
+      if (curQ < 10) {
+        playTurn();
+      } else {
+        finishGame();
+      }
     }
   };
 }
 
-function nextAction() {
-  if (curPlayer === 0) {
-    /* jugador 1 terminó → turno del 2 */
-    curPlayer = 1;
-    showPrep();
-  } else {
-    /* ambos terminaron → resultados */
-    showResults();
-  }
+/* ---------- terminar juego ---------- */
+function finishGame() {
+  hide('gameScreen');
+  show('resultScreen');
+  firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/finished/${myName}`), true);
+  showResults();
 }
 
-/* ---------- resultados ---------- */
-function showResults() {
-  hide('gameScreen');
-  hide('prepScreen');
-  show('resultScreen');
-
-  const [p1, p2] = players;
-  const t1 = (p1.tEnd - p1.tStart) / 1000;
-  const t2 = (p2.tEnd - p2.tStart) / 1000;
-
-  let winner, loser;
-  if (p1.correct > p2.correct || (p1.correct === p2.correct && t1 < t2)) {
-    winner = p1; loser = p2;
-  } else {
-    winner = p2; loser = p1;
+/* ---------- mostrar resultados cuando ambos terminen ---------- */
+firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/finished`), (snap) => {
+  if (snap.size === 2) {
+    showResults();
   }
+});
 
-  $('winnerInfo').innerHTML = `
-    <div class="winner">🏆 ${capitalize(winner.name)} – ${winner.correct}/10 en ${((winner.tEnd - winner.tStart) / 1000).toFixed(2)} s</div>
-    <div class="loser">${capitalize(loser.name)} – ${loser.correct}/10 en ${((loser.tEnd - loser.tStart) / 1000).toFixed(2)} s</div>
-  `;
+function showResults() {
+  firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/answers`), (snap) => {
+    const data = snap.val();
+    const p1Name = Object.keys(data)[0];
+    const p2Name = Object.keys(data)[1];
+    const p1Answers = Object.values(data[p1Name]);
+    const p2Answers = Object.values(data[p2Name]);
+    const p1Correct = p1Answers.filter(a => a.correct).length;
+    const p2Correct = p2Answers.filter(a => a.correct).length;
+    const p1Time = p1Answers.reduce((sum, a) => sum + a.time, 0);
+    const p2Time = p2Answers.reduce((sum, a) => sum + a.time, 0);
 
-  /* tabla resumen */
-  $('scoreTable').innerHTML = `
-    <tr><th>Nombre</th><th>Aciertos</th><th>Tiempo</th></tr>
-    <tr><td>${capitalize(p1.name)}</td><td>${p1.correct}/10</td><td>${t1.toFixed(2)} s</td></tr>
-    <tr><td>${capitalize(p2.name)}</td><td>${p2.correct}/10</td><td>${t2.toFixed(2)} s</td></tr>
-  `;
+    let winner, loser;
+    if (p1Correct > p2Correct || (p1Correct === p2Correct && p1Time < p2Time)) {
+      winner = { name: p1Name, correct: p1Correct, time: p1Time };
+      loser = { name: p2Name, correct: p2Correct, time: p2Time };
+    } else {
+      winner = { name: p2Name, correct: p2Correct, time: p2Time };
+      loser = { name: p1Name, correct: p1Correct, time: p1Time };
+    }
 
-  /* tabla detalle por jugador */
-  let rows = '<tr><th>Jugador</th><th>Operación</th><th>Respuesta</th><th>Resultado</th></tr>';
-  [p1, p2].forEach((p, idx) => {
-    p.answers.forEach(a => {
-      rows += `<tr>
-                 <td>${capitalize(p.name)}</td>
-                 <td>${a.a}×${a.b}</td>
-                 <td>${a.given}</td>
-                 <td>${a.ok ? '✓' : `✗ ${a.correct}`}</td>
-               </tr>`;
+    $('winnerInfo').innerHTML = `
+      <div class="winner">${capitalize(winner.name)} – ${winner.correct}/10 en ${winner.time.toFixed(2)} s</div>
+      <div class="loser">${capitalize(loser.name)} – ${loser.correct}/10 en ${loser.time.toFixed(2)} s</div>
+    `;
+
+    let detailRows = '<tr><th>Jugador</th><th>Operación</th><th>Respuesta</th><th>Tiempo</th><th>Resultado</th></tr>';
+    [p1Name, p2Name].forEach((name, idx) => {
+      const ans = Object.values(data[name]);
+      ans.forEach((a, i) => {
+        detailRows += `<tr>
+                         <td>${capitalize(name)}</td>
+                         <td>${questions[i][0]}×${questions[i][1]}</td>
+                         <td>${a.answer}</td>
+                         <td>${a.time.toFixed(2)} s</td>
+                         <td>${a.correct ? '✓' : `✗ ${questions[i][0] * questions[i][1]}`}</td>
+                       </tr>`;
+      });
     });
+    $('detailTable').innerHTML = detailRows;
   });
-  $('detailTable').innerHTML = rows;
-
-  $('restartBtn').focus();
 }
 
 $('restartBtn').onclick = () => {
-  hide('resultScreen');
-  startDuel();
+  location.reload();
 };
