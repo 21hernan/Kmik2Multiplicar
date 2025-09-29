@@ -50,3 +50,16 @@ th, td {
   font-weight: bold;
   font-size: 24px;
 }
+.loser {
+  color: #666;
+  font-weight: bold;
+  font-size: 20px;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+li {
+  margin: 4px 0;
+}

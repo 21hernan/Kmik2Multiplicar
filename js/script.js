@@ -8,13 +8,13 @@ const roomCode = params.get('sala') || 'default-room';
 const roomRef = firebaseRef(firebaseDB, `rooms/${roomCode}`);
 
 // Elementos
-const waitScreen = $('waitScreen');
-const gameScreen = $('gameScreen');
-const resultScreen = $('resultScreen');
-const playersList = $('playersList');
-const joinBtn = $('joinBtn');
-const startBtn = $('startBtn');
-const answerInput = $('answerInput');
+const waitScreen = document.getElementById('waitScreen');
+const gameScreen = document.getElementById('gameScreen');
+const resultScreen = document.getElementById('resultScreen');
+const playersList = document.getElementById('playersList');
+const joinBtn = document.getElementById('joinBtn');
+const startBtn = document.getElementById('startBtn');
+const answerInput = document.getElementById('answerInput');
 
 let myName = '';
 let players = [];
@@ -25,14 +25,15 @@ let myAnswers = [];
 let myCorrect = 0;
 let myStartTime = 0;
 
-/* ---------- unirse a la sala ---------- */
-$('roomCode').textContent = roomCode;
+/* ---------- mostrar código de sala ---------- */
+document.getElementById('roomCode').textContent = roomCode;
 
+/* ---------- unirse a la sala ---------- */
 joinBtn.onclick = () => {
-  const raw = $('playerNameInput').value.trim() || 'Anónimo';
+  const raw = document.getElementById('playerNameInput').value.trim() || 'Anónimo';
   myName = capitalize(raw);
   firebaseSet(firebaseRef(firebaseDB, `rooms/${roomCode}/players/${myName}`), { name: myName, ready: false });
-  $('playerNameInput').disabled = true;
+  document.getElementById('playerNameInput').disabled = true;
   joinBtn.disabled = true;
 };
 
@@ -64,17 +65,17 @@ firebaseOn(firebaseRef(firebaseDB, `rooms/${roomCode}/start`), (snap) => {
 /* ---------- turno del jugador ---------- */
 function playTurn() {
   show('gameScreen');
-  $('turnInfo').textContent = capitalize(myName);
-  $('questionNumber').textContent = `Pregunta ${curQ + 1} de 10`;
+  document.getElementById('turnInfo').textContent = capitalize(myName);
+  document.getElementById('questionNumber').textContent = `Pregunta ${curQ + 1} de 10`;
   const [a, b] = questions[curQ];
-  $('num1').textContent = a;
-  $('num2').textContent = b;
+  document.getElementById('num1').textContent = a;
+  document.getElementById('num2').textContent = b;
   answerInput.value = '';
   answerInput.focus();
   myStartTime = Date.now();
   timer = setInterval(() => {
     const t = (Date.now() - myStartTime) / 1000;
-    $('timer').textContent = `⏱ ${t.toFixed(2)} s`;
+    document.getElementById('timer').textContent = `⏱ ${t.toFixed(2)} s`;
   }, 100);
 
   answerInput.onkeydown = function (e) {
@@ -137,7 +138,7 @@ function showResults() {
       loser = { name: p1Name, correct: p1Correct, time: p1Time };
     }
 
-    $('winnerInfo').innerHTML = `
+    document.getElementById('winnerInfo').innerHTML = `
       <div class="winner">${capitalize(winner.name)} – ${winner.correct}/10 en ${winner.time.toFixed(2)} s</div>
       <div class="loser">${capitalize(loser.name)} – ${loser.correct}/10 en ${loser.time.toFixed(2)} s</div>
     `;
@@ -155,10 +156,10 @@ function showResults() {
                        </tr>`;
       });
     });
-    $('detailTable').innerHTML = detailRows;
+    document.getElementById('detailTable').innerHTML = detailRows;
   });
 }
 
-$('restartBtn').onclick = () => {
+document.getElementById('restartBtn').onclick = () => {
   location.reload();
 };
