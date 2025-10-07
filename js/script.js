@@ -5,9 +5,7 @@ const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase
 // Sala desde URL
 const params = new URLSearchParams(window.location.search);
 const roomCode = params.get('sala') || 'default-room';
-
-
-const roomRef = firebaseRef(firebaseDB, `https://duelo-multiplicar-default-rtdb.firebaseio.com/rooms/${roomCode}`);
+const roomRef = firebaseRef(firebaseDB, `rooms/${roomCode}`);
 
 // Elementos
 const nameScreen = document.getElementById('nameScreen');
